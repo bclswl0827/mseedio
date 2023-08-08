@@ -9,9 +9,10 @@ import (
 
 func main() {
 	var miniseed mseedio.MiniSeedData
-	err := miniseed.Read("./testdata.mseed")
+	err := miniseed.Read("./testdata/int32_Steim2_bigEndian.mseed")
 	if err != nil {
 		fmt.Println(err)
+		return
 	}
 
 	for _, v := range miniseed.Series {

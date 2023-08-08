@@ -2,14 +2,12 @@ package mseedio
 
 import (
 	"bufio"
-	"fmt"
-	"math"
 	"os"
 )
 
 // Read miniSEED file to structured MiniSeedData
 func (m *MiniSeedData) Read(filename string) error {
-	// Open SAC file
+	// Open miniSEED file
 	file, err := os.Open(filename)
 	if err != nil {
 		return err
@@ -29,63 +27,110 @@ func (m *MiniSeedData) Read(filename string) error {
 		bytes = append(bytes, buffer[:n]...)
 	}
 
+	// Guess data bit order
 	bitOrder, err := getBitOrder(bytes[46:48])
 	if err != nil {
 		return err
 	}
 
-	for i, j := 0, 0; ; i++ {
-		// Parse first fixed section
+	// Parse fixed and blockette sections
+	var (
+		fixedSections     = []fixedSection{}
+		blocketteSections = []blocketteSection{}
+		samplesNumber     = 0 // Total number of samples
+	)
+	for i := 0; i < len(bytes); i += 64 {
 		var (
-			fixedSection      = fixedSection{}
-			fixedSectionStart = 0
-			fixedSectionEnd   = FIXED_SECTION_LENGTH
+			fs = fixedSection{}
+			bs = blocketteSection{}
 		)
-		err = fixedSection.Parse(bytes[fixedSectionStart:fixedSectionEnd], bitOrder)
+
+		// Parse fixed section
+		fsOffset := i + FIXED_SECTION_LENGTH
+		err := fs.Parse(bytes[i:fsOffset], bitOrder)
+		if fs.SectionEndOffset != FIXED_SECTION_LENGTH ||
+			err != nil || (fs.DataQuality != "D" &&
+			fs.DataQuality != "R" &&
+			fs.DataQuality != "Q" &&
+			fs.DataQuality != "M") {
+			continue
+		}
+
+		// Parse blockette
+		bsOffset := i + int(fs.DataStartOffset)
+		err = bs.Parse(bytes[fsOffset:bsOffset], bitOrder)
 		if err != nil {
-			return err
+			continue
+		}
+
+		// Determine data encoding for 1001-blockettes
+		if bs.BlocketteCode == 1001 {
+			bs.EncodingFormat = int32(bytes[fsOffset:bsOffset][12])
+		}
+
+		// Set position [start:end]
+		fs.ReaderOffset = sectionOffset{
+			i, fsOffset,
+		}
+		bs.ReaderOffset = sectionOffset{
+			fsOffset, bsOffset,
 		}
 
 		// Set start time and sample
 		if i == 0 {
-			m.StartTime = fixedSection.StartTime
-		}
-		j += int(fixedSection.SamplesNumber)
-
-		// Parse blockette section
-		var (
-			blocketteSection = blocketteSection{}
-			blocketteStart   = FIXED_SECTION_LENGTH
-			blocketteEnd     = fixedSection.DataStartOffset
-		)
-		err = blocketteSection.Parse(bytes[blocketteStart:blocketteEnd], bitOrder)
-		if err != nil {
-			return err
+			m.StartTime = fs.StartTime
 		}
 
-		// Get frame length
-		var frameLen int
-		switch blocketteSection.BlocketteCode {
-		case 1000:
-			length := float64(blocketteSection.RecordLength)
-			frameLen = int(math.Pow(2.0, length))
-		case 1001:
-			frameLen = 512
-		default:
-			return fmt.Errorf("blockette type %d is not supported", blocketteSection.BlocketteCode)
-		}
+		// Add samples and append
+		samplesNumber += int(fs.SamplesNumber)
+		fixedSections = append(fixedSections, fs)
+		blocketteSections = append(blocketteSections, bs)
+	}
 
+	// Detect initial frame length automatically
+	var initLength int
+	for i := 64; i < len(bytes); i += 64 {
+		// Parse fixed section again
+		var fs = fixedSection{}
+		var fsOffset = i + FIXED_SECTION_LENGTH
+		err := fs.Parse(bytes[i:fsOffset], bitOrder)
+		if fs.SectionEndOffset == FIXED_SECTION_LENGTH &&
+			err == nil && (fs.DataQuality == "D" ||
+			fs.DataQuality == "R" ||
+			fs.DataQuality == "Q" ||
+			fs.DataQuality == "M") {
+			initLength = i
+			break
+		}
+	}
+	if initLength == 0 {
+		initLength = len(bytes)
+	}
+
+	// Detect each frame length automatically
+	var (
+		frameLength []int
+		lastOffset  sectionOffset
+	)
+	for i, v := range fixedSections {
+		if i == 0 {
+			frameLength = append(frameLength, initLength)
+		} else {
+			frameLength = append(frameLength, v.ReaderOffset.Start-lastOffset.Start)
+		}
+		lastOffset = v.ReaderOffset
+	}
+
+	// Parse data series section
+	for i, v := range blocketteSections {
 		// Parse data section
-		var (
-			dataSection = dataSection{}
-			dataStart   = blocketteEnd
-			dataEnd     = frameLen
-		)
-		err = dataSection.Parse(
-			bytes[dataStart:dataEnd],
-			int(fixedSection.SamplesNumber),
-			int(blocketteSection.BlocketteCode),
-			int(blocketteSection.EncodingFormat),
+		var ds = dataSection{}
+		var dsOffset = fixedSections[i].ReaderOffset.Start + frameLength[i]
+		err = ds.Parse(
+			bytes[v.ReaderOffset.End:dsOffset],
+			int(fixedSections[i].SamplesNumber),
+			int(v.BlocketteCode),
+			int(v.EncodingFormat),
 			bitOrder,
 		)
 		if err != nil {
@@ -94,21 +139,10 @@ func (m *MiniSeedData) Read(filename string) error {
 
 		// Append data series
 		m.Series = append(m.Series, dataSeries{
-			FixedSection:     fixedSection,
-			BlocketteSection: blocketteSection,
-			DataSection:      dataSection,
+			BlocketteSection: v,
+			DataSection:      ds,
+			FixedSection:     fixedSections[i],
 		})
-
-		// Update bytes
-		bytes = bytes[frameLen:]
-		if len(bytes) == 0 {
-			m.Records = i
-			m.Samples = j
-			m.EndTime = fixedSection.StartTime
-			m.Order = int(blocketteSection.BitOrder)
-			m.Type = int(blocketteSection.BlocketteCode)
-			break
-		}
 	}
 
 	return nil

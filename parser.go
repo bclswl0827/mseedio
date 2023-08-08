@@ -40,7 +40,7 @@ func (f *fixedSection) Parse(buffer []byte, bitOrder int) error {
 	return nil
 }
 
-// b.Parse parses MiniSeedData blockette section, only blockette 1000 is supported
+// b.Parse parses MiniSeedData blockette section
 func (b *blocketteSection) Parse(buffer []byte, bitOrder int) error {
 	t := reflect.ValueOf(b).Elem()
 
@@ -50,23 +50,47 @@ func (b *blocketteSection) Parse(buffer []byte, bitOrder int) error {
 	}
 	b.BlocketteCode = blkTyp
 
-	var fieldLen int
+	var fieldLength int
 	switch blkTyp {
+	case 100:
+	case 200:
+	case 201:
+	case 300:
+	case 310:
+	case 320:
+	case 390:
+	case 395:
+	case 400:
+	case 405:
+	case 500:
 	case 1000:
-		fieldLen = len(blockette1000SectionMap)
+		fieldLength = len(blockette1000SectionMap)
 	case 1001:
-		fieldLen = len(blockette1001SectionMap)
+		fieldLength = len(blockette1001SectionMap)
+	case 2000:
 	default:
 		return fmt.Errorf("blockette type %d is not supported", blkTyp)
 	}
 
-	for i, j := 2, 1; j < fieldLen; j++ {
+	for i, j := 2, 1; j < fieldLength; j++ {
 		var field sectionMap
 		switch blkTyp {
+		case 100:
+		case 200:
+		case 201:
+		case 300:
+		case 310:
+		case 320:
+		case 390:
+		case 395:
+		case 400:
+		case 405:
+		case 500:
 		case 1000:
 			field = blockette1000SectionMap[j]
 		case 1001:
 			field = blockette1001SectionMap[j]
+		case 2000:
 		default:
 			return fmt.Errorf("blockette type %d is not supported", blkTyp)
 		}
@@ -100,34 +124,43 @@ func (b *blocketteSection) Parse(buffer []byte, bitOrder int) error {
 func (d *dataSection) Parse(buffer []byte, samples, blockette, encoding, bitOrder int) error {
 	d.RawData = buffer
 
-	if blockette == 1001 {
-		encoding = 11
-	}
-
 	switch encoding {
 	case 0: // ASCII text
-		d.Decoded = append(d.Decoded, string(buffer))
+		d.Decoded = append(d.Decoded, unpackString(buffer))
 	case 1: // 16-bit integer
-		for i := 2; i < len(buffer); i += 2 {
-			d.Decoded = append(d.Decoded, assembleInt(buffer[i-2:i], 2, bitOrder))
+		result := unpackInt(buffer, samples, 16, bitOrder)
+		for _, v := range result {
+			d.Decoded = append(d.Decoded, v)
 		}
 	case 2: // 24-bit integer
-		for i := 3; i < len(buffer); i += 3 {
-			d.Decoded = append(d.Decoded, assembleInt(buffer[i-3:i], 3, bitOrder))
+		result := unpackInt(buffer, samples, 24, bitOrder)
+		for _, v := range result {
+			d.Decoded = append(d.Decoded, v)
 		}
 	case 3: // 32-bit integer
-		for i := 4; i < len(buffer); i += 4 {
-			d.Decoded = append(d.Decoded, assembleInt(buffer[i-4:i], 4, bitOrder))
+		result := unpackInt(buffer, samples, 32, bitOrder)
+		for _, v := range result {
+			d.Decoded = append(d.Decoded, v)
 		}
 	case 4: // IEEE 32-bit floating point
-		for i := 4; i < len(buffer); i += 4 {
-			d.Decoded = append(d.Decoded, assembleFloat32(buffer[i-4:i], bitOrder))
+		result := unpackFloat(buffer, samples, 32, bitOrder)
+		for _, v := range result {
+			d.Decoded = append(d.Decoded, v)
 		}
 	case 5: // IEEE 64-bit floating point
-		for i := 8; i < len(buffer); i += 8 {
-			d.Decoded = append(d.Decoded, assembleFloat64(buffer[i-8:i], bitOrder))
+		result := unpackFloat(buffer, samples, 64, bitOrder)
+		for _, v := range result {
+			d.Decoded = append(d.Decoded, v)
 		}
-	case 11: // Steim-2
+	case 10: // Steim-1 compression
+		result, err := unpackSteim1(buffer, samples, bitOrder)
+		if err != nil {
+			return err
+		}
+		for _, v := range result {
+			d.Decoded = append(d.Decoded, v)
+		}
+	case 11: // Steim-2 compression
 		result, err := unpackSteim2(buffer, samples, bitOrder)
 		if err != nil {
 			return err

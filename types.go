@@ -13,6 +13,11 @@ const (
 	MSBFIRST = 1
 )
 
+type sectionOffset struct {
+	Start int
+	End   int
+}
+
 type fixedSection struct {
 	SequenceNumber   string
 	DataQuality      string
@@ -31,17 +36,19 @@ type fixedSection struct {
 	TimeCorrection   int32
 	DataStartOffset  int32
 	SectionEndOffset int32
+	ReaderOffset     sectionOffset // Used when parsing
 }
 
 type blocketteSection struct {
-	BlocketteCode  int32 // Blockette 100*
-	NextBlockette  int32 // Blockette 100*
-	EncodingFormat int32 // Blockette 1000
-	BitOrder       int32 // Blockette 1000
-	RecordLength   int32 // Blockette 1000
-	TimingQuality  int32 // Blockette 1001
-	Microseconds   int32 // Blockette 1001
-	FrameCount     int32 // Blockette 1001
+	BlocketteCode  int32         // Blockette 100*
+	NextBlockette  int32         // Blockette 100*
+	EncodingFormat int32         // Blockette 1000
+	BitOrder       int32         // Blockette 1000
+	RecordLength   int32         // Blockette 1000
+	TimingQuality  int32         // Blockette 1001
+	Microseconds   int32         // Blockette 1001
+	FrameCount     int32         // Blockette 1001
+	ReaderOffset   sectionOffset // Used when parsing
 }
 
 type dataSection struct {

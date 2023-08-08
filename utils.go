@@ -17,8 +17,8 @@ func setSignToUint(value, bitWidth uint32) int32 {
 	return int32(value)
 }
 
-// getSplitedByteArray returns bytes from a number
-func getSplitedByteArray(number uint, space, bitOrder int) ([]byte, error) {
+// getSplitedArray returns bytes by sapce from a number
+func getSplitedArray(number uint, space, bitOrder int) ([]byte, error) {
 	if space <= 0 || space > 32 {
 		return nil, fmt.Errorf("invalid bits space value")
 	}
