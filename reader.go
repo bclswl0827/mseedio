@@ -145,5 +145,12 @@ func (m *MiniSeedData) Read(filename string) error {
 		})
 	}
 
+	// Set file info
+	m.Order = bitOrder
+	m.Samples = samplesNumber
+	m.Records = len(fixedSections)
+	m.Type = int(blocketteSections[0].BlocketteCode)
+	m.EndTime = fixedSections[len(fixedSections)-1].StartTime
+
 	return nil
 }
