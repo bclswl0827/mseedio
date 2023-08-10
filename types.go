@@ -5,7 +5,10 @@ import (
 )
 
 // The length of the fixed header section
-const FIXED_SECTION_LENGTH = 48
+const (
+	FIXED_SECTION_LENGTH         = 48
+	BLOCKETTE100X_SECTION_LENGTH = 16
+)
 
 // First significant bit
 const (
@@ -13,11 +16,31 @@ const (
 	MSBFIRST = 1
 )
 
+// Encoding Types
+const (
+	ASCII   = 0
+	INT16   = 1
+	INT24   = 2
+	INT32   = 3
+	FLOAT32 = 4
+	FLOAT64 = 5
+	STEIM1  = 10
+	STEIM2  = 11
+)
+
+// Writing mode
+const (
+	APPEND    = 0
+	OVERWRITE = 1
+)
+
+// sectionOffset is used when parsing a MiniSeed record
 type sectionOffset struct {
 	Start int
 	End   int
 }
 
+// fixedSection is the fixed header section of a MiniSeed record
 type fixedSection struct {
 	SequenceNumber   string
 	DataQuality      string
@@ -39,6 +62,7 @@ type fixedSection struct {
 	ReaderOffset     sectionOffset // Used when parsing
 }
 
+// blocketteSection is the blockette header section of a MiniSeed record
 type blocketteSection struct {
 	BlocketteCode  int32         // Blockette 100*
 	NextBlockette  int32         // Blockette 100*
@@ -51,23 +75,27 @@ type blocketteSection struct {
 	ReaderOffset   sectionOffset // Used when parsing
 }
 
+// dataSection includes the decoded data and the raw data
 type dataSection struct {
 	Decoded []any
 	RawData []byte
 }
 
+// dataSeries corresponds to a single data series in a MiniSeed record
 type dataSeries struct {
 	DataSection      dataSection
 	FixedSection     fixedSection
 	BlocketteSection blocketteSection
 }
 
+// sectionMap is used when parsing a MiniSeed record
 type sectionMap struct {
 	FieldName string
 	FieldType string
 	FieldSize int
 }
 
+// MiniSeedData is the main struct for a MiniSeed record
 type MiniSeedData struct {
 	Type      int
 	Order     int
@@ -76,6 +104,17 @@ type MiniSeedData struct {
 	StartTime time.Time
 	EndTime   time.Time
 	Series    []dataSeries
+}
+
+// DataOptions is used when appending a MiniSeed record
+type AppendOptions struct {
+	SampleRate     float64
+	SequenceNumber string
+	StationCode    string
+	LocationCode   string
+	ChannelCode    string
+	NetworkCode    string
+	StartTime      time.Time
 }
 
 var (

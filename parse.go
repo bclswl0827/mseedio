@@ -5,7 +5,7 @@ import (
 	"reflect"
 )
 
-// f.Parse parses MiniSeedData fixed section
+// f.Parse() parses MiniSeedData fixed section
 func (f *fixedSection) Parse(buffer []byte, bitOrder int) error {
 	t := reflect.ValueOf(f).Elem()
 
@@ -18,10 +18,11 @@ func (f *fixedSection) Parse(buffer []byte, bitOrder int) error {
 		)
 
 		var err error
-		i += field.FieldSize
+		i += fieldSize
 
 		switch field.FieldType {
 		case "int32":
+			// "int32" bit width should actually be determined by fieldSize
 			result := assembleInt(fieldSlice, fieldSize, bitOrder)
 			err = setStructFieldValue(t, fieldName, result)
 		case "string":
@@ -40,7 +41,7 @@ func (f *fixedSection) Parse(buffer []byte, bitOrder int) error {
 	return nil
 }
 
-// b.Parse parses MiniSeedData blockette section
+// b.Parse() parses MiniSeedData blockette section
 func (b *blocketteSection) Parse(buffer []byte, bitOrder int) error {
 	t := reflect.ValueOf(b).Elem()
 
@@ -102,9 +103,10 @@ func (b *blocketteSection) Parse(buffer []byte, bitOrder int) error {
 			fieldSlice = buffer[i : i+fieldSize]
 		)
 
-		i += field.FieldSize
+		i += fieldSize
 		switch field.FieldType {
 		case "int32":
+			// "int32" bit width should actually be determined by fieldSize
 			result := assembleInt(fieldSlice, fieldSize, bitOrder)
 			err = setStructFieldValue(t, fieldName, result)
 		case "string":
@@ -120,39 +122,39 @@ func (b *blocketteSection) Parse(buffer []byte, bitOrder int) error {
 	return nil
 }
 
-// d.Parse parses MiniSeedData data section, only encoding 0, 1, 2, 3, 11 are supported
+// d.Parse() parses MiniSeedData data section
 func (d *dataSection) Parse(buffer []byte, samples, blockette, encoding, bitOrder int) error {
 	d.RawData = buffer
 
 	switch encoding {
-	case 0: // ASCII text
-		d.Decoded = append(d.Decoded, unpackString(buffer))
-	case 1: // 16-bit integer
+	case ASCII: // ASCII text
+		d.Decoded = append(d.Decoded, unpackAscii(buffer))
+	case INT16: // 16-bit integer
 		result := unpackInt(buffer, samples, 16, bitOrder)
 		for _, v := range result {
 			d.Decoded = append(d.Decoded, v)
 		}
-	case 2: // 24-bit integer
+	case INT24: // 24-bit integer
 		result := unpackInt(buffer, samples, 24, bitOrder)
 		for _, v := range result {
 			d.Decoded = append(d.Decoded, v)
 		}
-	case 3: // 32-bit integer
+	case INT32: // 32-bit integer
 		result := unpackInt(buffer, samples, 32, bitOrder)
 		for _, v := range result {
 			d.Decoded = append(d.Decoded, v)
 		}
-	case 4: // IEEE 32-bit floating point
+	case FLOAT32: // IEEE 32-bit floating point
 		result := unpackFloat(buffer, samples, 32, bitOrder)
 		for _, v := range result {
 			d.Decoded = append(d.Decoded, v)
 		}
-	case 5: // IEEE 64-bit floating point
+	case FLOAT64: // IEEE 64-bit floating point
 		result := unpackFloat(buffer, samples, 64, bitOrder)
 		for _, v := range result {
 			d.Decoded = append(d.Decoded, v)
 		}
-	case 10: // Steim-1 compression
+	case STEIM1: // Steim-1 compression
 		result, err := unpackSteim1(buffer, samples, bitOrder)
 		if err != nil {
 			return err
@@ -160,7 +162,7 @@ func (d *dataSection) Parse(buffer []byte, samples, blockette, encoding, bitOrde
 		for _, v := range result {
 			d.Decoded = append(d.Decoded, v)
 		}
-	case 11: // Steim-2 compression
+	case STEIM2: // Steim-2 compression
 		result, err := unpackSteim2(buffer, samples, bitOrder)
 		if err != nil {
 			return err

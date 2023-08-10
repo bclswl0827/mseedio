@@ -9,12 +9,15 @@ import (
 
 func main() {
 	var miniseed mseedio.MiniSeedData
+
+	// Read miniSEED file
 	err := miniseed.Read("./testdata/int32_Steim2_bigEndian.mseed")
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
+	// Print structured data
 	for _, v := range miniseed.Series {
 		printFields(v.FixedSection)
 		printFields(v.BlocketteSection)

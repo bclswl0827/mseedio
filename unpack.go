@@ -4,10 +4,12 @@ import (
 	"fmt"
 )
 
-func unpackString(buffer []byte) string {
+// unpackAscii unpacks ASCII data from buffer
+func unpackAscii(buffer []byte) string {
 	return string(buffer)
 }
 
+// unpackInt unpacks int32 array from buffer
 func unpackInt(buffer []byte, samples, bitWidth, bitOrder int) (data []int32) {
 	space := bitWidth / 8
 	for i := space; i < len(buffer); i += space {
@@ -17,6 +19,7 @@ func unpackInt(buffer []byte, samples, bitWidth, bitOrder int) (data []int32) {
 	return data[:samples]
 }
 
+// unpackFloat unpacks float64 array from buffer
 func unpackFloat(buffer []byte, samples, bitWidth, bitOrder int) (data []float64) {
 	space := bitWidth / 8
 	for i := space; i < len(buffer); i += space {
@@ -31,6 +34,7 @@ func unpackFloat(buffer []byte, samples, bitWidth, bitOrder int) (data []float64
 	return data[:samples]
 }
 
+// unpackSteim1 unpacks Steim1 data from buffer
 func unpackSteim1(buffer []byte, samples, bitOrder int) ([]int32, error) {
 	if bitOrder == LSBFIRST {
 		return nil, fmt.Errorf("Steim1 with LSBFIRST is not allowed")
@@ -119,6 +123,7 @@ func unpackSteim1(buffer []byte, samples, bitOrder int) ([]int32, error) {
 	return res[:samples], nil
 }
 
+// unpackSteim2 unpacks Steim2 data from buffer
 func unpackSteim2(buffer []byte, samples, bitOrder int) ([]int32, error) {
 	if bitOrder == LSBFIRST {
 		return nil, fmt.Errorf("Steim2 with LSBFIRST is not allowed")

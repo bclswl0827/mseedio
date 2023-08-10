@@ -5,10 +5,10 @@ import (
 	"os"
 )
 
-// Read miniSEED file to structured MiniSeedData
-func (m *MiniSeedData) Read(filename string) error {
+// m.Read() reads miniSEED file to structured MiniSeedData
+func (m *MiniSeedData) Read(filePath string) error {
 	// Open miniSEED file
-	file, err := os.Open(filename)
+	file, err := os.Open(filePath)
 	if err != nil {
 		return err
 	}
@@ -63,8 +63,9 @@ func (m *MiniSeedData) Read(filename string) error {
 			continue
 		}
 
-		// Determine data encoding for 1001-blockettes
+		// Determine encoding for non 100-blockettes
 		if bs.BlocketteCode == 1001 {
+			// Encoding is usually in bytes[fsOffset:bsOffset][12]
 			bs.EncodingFormat = int32(bytes[fsOffset:bsOffset][12])
 		}
 

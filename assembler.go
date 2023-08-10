@@ -1,6 +1,7 @@
 package mseedio
 
 import (
+	"encoding/binary"
 	"math"
 	"time"
 )
@@ -46,7 +47,7 @@ func assembleUint(data []byte, n int, bitOrder int) uint32 {
 	return result
 }
 
-// assembleTime assembles a Time from 10 bytes
+// assembleTime assembles a time.Time from 10 bytes
 func assembleTime(data []byte, bitOrder int) time.Time {
 	var (
 		year int
@@ -79,24 +80,6 @@ func assembleTime(data []byte, bitOrder int) time.Time {
 	return time.Date(year, md.Month(), md.Day(), hour, min, sec, 0, time.UTC).Add(offset)
 }
 
-// disassembleInt disassembles a int32 to n bytes
-func disassembleInt(data int32, n int, bitOrder int) []byte {
-	bytes := make([]byte, n)
-	if bitOrder == LSBFIRST {
-		for i := 0; i < n; i++ {
-			bytes[i] = byte(data >> uint(i*8))
-		}
-
-		return bytes
-	}
-
-	for i := 0; i < n; i++ {
-		bytes[i] = byte(data >> uint((n-i-1)*8))
-	}
-
-	return bytes
-}
-
 // assembleFloat32 assembles a float32 from 4 bytes
 func assembleFloat32(data []byte, bitOrder int) float32 {
 	var bits uint32
@@ -121,12 +104,87 @@ func assembleFloat64(data []byte, bitOrder int) float64 {
 	return math.Float64frombits(bits)
 }
 
-// disassembleString disassembles a string to bytes
-func disassembleString(data string) []byte {
-	bytes := []byte(data)
-	if len(bytes) > 8 {
-		bytes = bytes[:8]
+// disassembleInt disassembles n int to bytes
+func disassembleInt(data int32, n int, bitOrder int) []byte {
+	bytes := make([]byte, n)
+	if bitOrder == LSBFIRST {
+		for i := 0; i < n; i++ {
+			bytes[i] = byte(data >> uint(i*8))
+		}
+
+		return bytes
+	}
+
+	for i := 0; i < n; i++ {
+		bytes[i] = byte(data >> uint((n-i-1)*8))
 	}
 
 	return bytes
+}
+
+// disassembleFloat disassembles a float to bytes
+func disassembleFloat(data any, bitOrder int) []byte {
+	switch v := data.(type) {
+	case float32:
+		bytes := make([]byte, 4)
+		if bitOrder == LSBFIRST {
+			binary.LittleEndian.PutUint32(bytes, math.Float32bits(v))
+			return bytes
+		}
+		binary.BigEndian.PutUint32(bytes, math.Float32bits(v))
+		return bytes
+	case float64:
+		bytes := make([]byte, 8)
+		if bitOrder == LSBFIRST {
+			binary.LittleEndian.PutUint64(bytes, math.Float64bits(v))
+			return bytes
+		}
+		binary.BigEndian.PutUint64(bytes, math.Float64bits(v))
+		return bytes
+	}
+
+	return nil
+}
+
+// disassembleString disassembles a string to bytes
+func disassembleString(data string, length int, padding byte) []byte {
+	if len(data) > length {
+		data = data[:length]
+	} else if len(data) < length {
+		zeroPadding := make([]byte, length-len(data))
+		// fill padding
+		for i := range zeroPadding {
+			zeroPadding[i] = padding
+		}
+		data += string(zeroPadding)
+	}
+
+	return []byte(data)
+}
+
+// disassembleTime disassembles a time.Time to 10 bytes
+func disassembleTime(t time.Time, bitOrder int) []byte {
+	year := t.Year()
+	days := getDaysByDate(t)
+	hour, min, sec := t.Hour(), t.Minute(), t.Second()
+	nsec := t.Nanosecond() / 100000
+
+	var data []byte
+	if bitOrder == LSBFIRST {
+		data = []byte{
+			byte(year & 0xFF), byte(year >> 8),
+			byte(days & 0xFF), byte(days >> 8),
+			byte(hour), byte(min), byte(sec),
+			byte(nsec & 0xFF), byte((nsec >> 8) & 0xFF), byte(nsec >> 16),
+		}
+	} else {
+		data = []byte{
+			byte(year >> 8), byte(year & 0xFF),
+			byte(days >> 8), byte(days & 0xFF),
+			byte(hour), byte(min), byte(sec),
+			byte(nsec >> 16), byte((nsec >> 8) & 0xFF), byte(nsec & 0xFF),
+		}
+	}
+
+	return data
 }

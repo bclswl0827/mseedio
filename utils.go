@@ -4,8 +4,52 @@ import (
 	"fmt"
 	"math"
 	"reflect"
+	"strconv"
+	"strings"
 	"time"
 )
+
+// getDigitsFloat64 returns the number of digits in a float64
+func getDigitsFloat64(num float64) (intDigitCount int, fracDigitCount int) {
+	strNum := strconv.FormatFloat(num, 'f', -1, 64)
+	parts := strings.Split(strNum, ".")
+
+	intPart := parts[0]
+	for _, char := range intPart {
+		if char >= '0' && char <= '9' {
+			intDigitCount++
+		}
+	}
+
+	var fracPart string
+	if len(parts) > 1 {
+		fracPart = parts[1]
+	}
+	for _, char := range fracPart {
+		if char >= '0' && char <= '9' {
+			fracDigitCount++
+		}
+	}
+
+	return intDigitCount, fracDigitCount
+}
+
+// nextPow2 returns the next power of 2
+func nextPow2(num int) int {
+	if num <= 0 {
+		return 1
+	}
+
+	num--
+	num |= num >> 1
+	num |= num >> 2
+	num |= num >> 4
+	num |= num >> 8
+	num |= num >> 16
+	num++
+
+	return num
+}
 
 // setSignToUint sets signed integer to byte array
 func setSignToUint(value, bitWidth uint32) int32 {
@@ -72,6 +116,11 @@ func getBlocketteType(buffer []byte, bitOrder int) (int32, error) {
 
 	typ := assembleInt(buffer, 2, bitOrder)
 	return typ, nil
+}
+
+// getDaysByDate returns days of year
+func getDaysByDate(date time.Time) int {
+	return date.YearDay()
 }
 
 // getMonthByDays returns month by days of year
