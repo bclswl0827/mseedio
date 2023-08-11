@@ -2,7 +2,7 @@ package mseedio
 
 import "fmt"
 
-// m.Init() Initialize MiniSeedData with data type and bit order
+// m.Init() initialize MiniSeedData with data type and bit order
 func (m *MiniSeedData) Init(dataType, bitOrder int) error {
 	if len(m.Series) > 0 {
 		return fmt.Errorf("empty data series is required")

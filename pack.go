@@ -6,6 +6,7 @@ import (
 	"strings"
 )
 
+// packAscii packs ASCII data from buffer
 func packAscii(buffer []int32) []byte {
 	var strSlice []string
 	for _, num := range buffer {
@@ -16,6 +17,7 @@ func packAscii(buffer []int32) []byte {
 	return []byte(joinedStr)
 }
 
+// packInt packs int32 array from buffer
 func packInt(buffer []int32, bitWidth, bitOrder int) (data []byte) {
 	n := bitWidth / 8
 	for _, v := range buffer {
@@ -25,6 +27,7 @@ func packInt(buffer []int32, bitWidth, bitOrder int) (data []byte) {
 	return data
 }
 
+// packFloat packs float64 array from buffer
 func packFloat(buffer []int32, bitWidth, bitOrder int) (data []byte) {
 	for _, v := range buffer {
 		if bitWidth == 32 {
@@ -37,10 +40,11 @@ func packFloat(buffer []int32, bitWidth, bitOrder int) (data []byte) {
 	return data
 }
 
+// packSteim1 packs Steim1 data from buffer
 func packSteim1(buffer []int32, bitOrder int) ([]byte, error) {
-	if bitOrder == LSBFIRST {
-		return nil, fmt.Errorf("Steim1 with LSBFIRST is not allowed")
-	}
+	// if bitOrder == LSBFIRST {
+	// 	return nil, fmt.Errorf("Steim1 with LSBFIRST is not allowed")
+	// }
 
 	// dataLength := len(buffer)
 	// x0 := buffer[0]            // Fisrt absolute value
@@ -50,10 +54,11 @@ func packSteim1(buffer []int32, bitOrder int) ([]byte, error) {
 	return nil, err
 }
 
+// packSteim2 packs Steim2 data from buffer
 func packSteim2(buffer []int32, bitOrder int) ([]byte, error) {
-	if bitOrder == LSBFIRST {
-		return nil, fmt.Errorf("Steim1 with LSBFIRST is not allowed")
-	}
+	// if bitOrder == LSBFIRST {
+	// 	return nil, fmt.Errorf("Steim1 with LSBFIRST is not allowed")
+	// }
 
 	// dataLength := len(buffer)
 	// x0 := buffer[0]            // Fisrt absolute value

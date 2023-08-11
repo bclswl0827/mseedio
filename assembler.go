@@ -11,7 +11,7 @@ func assembleString(data []byte) string {
 	return string(data)
 }
 
-// assembleInt assembles a int from n bytes
+// assembleInt assembles an int from n bytes
 func assembleInt(data []byte, n int, bitOrder int) int32 {
 	var result int32
 	if bitOrder == LSBFIRST {
@@ -29,7 +29,7 @@ func assembleInt(data []byte, n int, bitOrder int) int32 {
 	return result
 }
 
-// assembleUint assembles a uint from n bytes
+// assembleUint assembles an uint from n bytes
 func assembleUint(data []byte, n int, bitOrder int) uint32 {
 	var result uint32
 	if bitOrder == LSBFIRST {
@@ -104,7 +104,7 @@ func assembleFloat64(data []byte, bitOrder int) float64 {
 	return math.Float64frombits(bits)
 }
 
-// disassembleInt disassembles n int to bytes
+// disassembleInt disassembles an int to bytes
 func disassembleInt(data int32, n int, bitOrder int) []byte {
 	bytes := make([]byte, n)
 	if bitOrder == LSBFIRST {

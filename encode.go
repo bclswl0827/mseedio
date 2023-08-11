@@ -5,7 +5,7 @@ import (
 	"math"
 )
 
-// m.Encode() encodes record with 1000-blockette
+// m.Encode() encodes record(s) with 1000-blockette
 func (m *MiniSeedData) Encode(encodeMode, bitOrder int) ([]byte, error) {
 	// STEIM-* does not support LSBFIRST
 	if bitOrder == LSBFIRST {

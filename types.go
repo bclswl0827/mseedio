@@ -106,7 +106,7 @@ type MiniSeedData struct {
 	Series    []dataSeries
 }
 
-// DataOptions is used when appending a MiniSeed record
+// AppendOptions is used when appending a MiniSeed record
 type AppendOptions struct {
 	SampleRate     float64
 	SequenceNumber string
