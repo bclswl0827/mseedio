@@ -9,7 +9,8 @@ import (
 func (m *MiniSeedData) Append(data []int32, options AppendOptions) error {
 	// Check if sequence number is valid
 	for _, v := range m.Series {
-		if v.FixedSection.SequenceNumber == options.SequenceNumber {
+		if v.FixedSection.SequenceNumber == options.SequenceNumber &&
+			v.FixedSection.ChannelCode == options.ChannelCode {
 			return fmt.Errorf("sequence number %s already exists", options.SequenceNumber)
 		}
 	}
