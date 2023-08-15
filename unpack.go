@@ -16,6 +16,10 @@ func unpackInt(buffer []byte, samples, bitWidth, bitOrder int) (data []int32) {
 		data = append(data, assembleInt(buffer[i-space:i], space, bitOrder))
 	}
 
+	if len(data) < samples {
+		return data
+	}
+
 	return data[:samples]
 }
 
@@ -29,6 +33,10 @@ func unpackFloat(buffer []byte, samples, bitWidth, bitOrder int) (data []float64
 		case 8:
 			data = append(data, assembleFloat64(buffer[i-space:i], bitOrder))
 		}
+	}
+
+	if len(data) < samples {
+		return data
 	}
 
 	return data[:samples]
