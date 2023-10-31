@@ -2,19 +2,16 @@ package mseedio
 
 import (
 	"fmt"
-	"strconv"
-	"strings"
 )
 
 // packAscii packs ASCII data from buffer
 func packAscii(buffer []int32) []byte {
-	var strSlice []string
+	var strSlice []byte
 	for _, num := range buffer {
-		strSlice = append(strSlice, strconv.Itoa(int(num)))
+		strSlice = append(strSlice, byte(num))
 	}
 
-	joinedStr := strings.Join(strSlice, " ")
-	return []byte(joinedStr)
+	return strSlice
 }
 
 // packInt packs int32 array from buffer
