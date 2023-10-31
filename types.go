@@ -83,9 +83,9 @@ type dataSection struct {
 
 // dataSeries corresponds to a single data series in a MiniSeed record
 type dataSeries struct {
-	DataSection      dataSection
-	FixedSection     fixedSection
-	BlocketteSection blocketteSection
+	DataSection      *dataSection
+	FixedSection     *fixedSection
+	BlocketteSection *blocketteSection
 }
 
 // sectionMap is used when parsing a MiniSeed record

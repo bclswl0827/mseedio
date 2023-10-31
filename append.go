@@ -6,7 +6,7 @@ import (
 )
 
 // m.Append() appends data to the MiniSeedData with 1000 blockette
-func (m *MiniSeedData) Append(data []int32, options AppendOptions) error {
+func (m *MiniSeedData) Append(data []int32, options *AppendOptions) error {
 	// Check if sequence number is valid
 	for _, v := range m.Series {
 		if v.FixedSection.SequenceNumber == options.SequenceNumber &&
@@ -117,9 +117,9 @@ func (m *MiniSeedData) Append(data []int32, options AppendOptions) error {
 	ds.Decoded = append(ds.Decoded, data)
 	ds.RawData = append(ds.RawData, dataBytes...)
 	m.Series = append(m.Series, dataSeries{
-		FixedSection:     fs,
-		BlocketteSection: bs,
-		DataSection:      ds,
+		FixedSection:     &fs,
+		BlocketteSection: &bs,
+		DataSection:      &ds,
 	})
 
 	// Updating counters

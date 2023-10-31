@@ -140,9 +140,9 @@ func (m *MiniSeedData) Read(filePath string) error {
 
 		// Append data series
 		m.Series = append(m.Series, dataSeries{
-			BlocketteSection: v,
-			DataSection:      ds,
-			FixedSection:     fixedSections[i],
+			BlocketteSection: &v,
+			DataSection:      &ds,
+			FixedSection:     &fixedSections[i],
 		})
 	}
 

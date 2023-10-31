@@ -27,7 +27,7 @@ func main() {
 
 		// Append records
 		t := startTime.Add(time.Second)
-		err = miniseed.Append(data, mseedio.AppendOptions{
+		err = miniseed.Append(data, &mseedio.AppendOptions{
 			SampleRate:     100,
 			StartTime:      t,
 			SequenceNumber: fmt.Sprintf("%06d", i),
