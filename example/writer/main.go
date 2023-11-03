@@ -13,7 +13,7 @@ func main() {
 	var miniseed mseedio.MiniSeedData
 
 	// Init header fields
-	miniseed.Init(mseedio.INT32, mseedio.MSBFIRST)
+	miniseed.Init(mseedio.STEIM2, mseedio.MSBFIRST)
 
 	// Append records and increment sequence number
 	startTime := time.Now()
@@ -30,7 +30,7 @@ func main() {
 		err = miniseed.Append(data, &mseedio.AppendOptions{
 			SampleRate:     100,
 			StartTime:      t,
-			SequenceNumber: fmt.Sprintf("%06d", i),
+			SequenceNumber: fmt.Sprintf("%06d", i+1),
 			StationCode:    "AAAAA",
 			LocationCode:   "BB",
 			ChannelCode:    "EHZ",

@@ -64,7 +64,7 @@ func unpackSteim1(buffer []byte, samples, bitOrder int) ([]int32, error) {
 	// Get compression flags
 	var cf [][]byte
 	for i := 0; i < len(w0); i++ {
-		n, _ := getSplitedArray(uint(w0[i]), 2, bitOrder)
+		n, _ := getSplitedBytes(uint(w0[i]), 2, bitOrder)
 		cf = append(cf, n[1:])
 	}
 
@@ -125,7 +125,7 @@ func unpackSteim1(buffer []byte, samples, bitOrder int) ([]int32, error) {
 	// Compare xn
 	if res[samples-1] != xn {
 		err := fmt.Errorf("unpacked samples does not match xn")
-		return nil, err
+		return res[:samples], err
 	}
 
 	return res[:samples], nil
@@ -153,7 +153,7 @@ func unpackSteim2(buffer []byte, samples, bitOrder int) ([]int32, error) {
 	// Get compression flags
 	var cf [][]byte
 	for i := 0; i < len(w0); i++ {
-		n, _ := getSplitedArray(uint(w0[i]), 2, bitOrder)
+		n, _ := getSplitedBytes(uint(w0[i]), 2, bitOrder)
 		cf = append(cf, n[1:])
 	}
 
@@ -183,14 +183,14 @@ func unpackSteim2(buffer []byte, samples, bitOrder int) ([]int32, error) {
 					xn = int32(dat)
 				}
 			case 1: // Contains four 8-bit differences
-				arr, err := getSplitedArray(uint(dat), 8, bitOrder)
+				arr, err := getSplitedBytes(uint(dat), 8, bitOrder)
 				if err != nil {
 					return nil, err
 				}
 				for _, v := range arr {
 					df = append(df, setSignToUint(uint32(v), 8))
 				}
-			case 2: // get dnib
+			case 2: // Determine from dnib
 				dnib := (dat >> 30) & 0x03
 				switch dnib {
 				case 1: // Wn contains one 30-bit difference
@@ -210,7 +210,7 @@ func unpackSteim2(buffer []byte, samples, bitOrder int) ([]int32, error) {
 					err := fmt.Errorf("illegal decode nibble")
 					return nil, err
 				}
-			case 3: // get dnib
+			case 3: // Determine from dnib
 				dnib := (dat >> 30) & 0x3fffffff
 				switch dnib {
 				case 0: // Wn contains five 6-bit differences
@@ -252,7 +252,7 @@ func unpackSteim2(buffer []byte, samples, bitOrder int) ([]int32, error) {
 	// Compare xn
 	if res[samples-1] != xn {
 		err := fmt.Errorf("unpacked samples does not match xn")
-		return nil, err
+		return res[:samples], err
 	}
 
 	return res[:samples], nil

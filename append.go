@@ -5,7 +5,7 @@ import (
 	"math"
 )
 
-// m.Append() appends data to the MiniSeedData with 1000 blockette
+// m.Append() appends data to 1000 blockette MiniSeedData
 func (m *MiniSeedData) Append(data []int32, options *AppendOptions) error {
 	// Check if sequence number is valid
 	for _, v := range m.Series {
@@ -52,11 +52,11 @@ func (m *MiniSeedData) Append(data []int32, options *AppendOptions) error {
 	}
 
 	// Get entire record length
-	recordRength := math.Log2(float64(
+	recordLength := math.Log2(float64(
 		nextPow2(FIXED_SECTION_LENGTH + BLOCKETTE100X_SECTION_LENGTH + len(dataBytes)),
 	))
-	if recordRength < 8 {
-		recordRength = 8
+	if recordLength < 8 {
+		recordLength = 8
 	}
 
 	// Set blockette section
@@ -65,7 +65,7 @@ func (m *MiniSeedData) Append(data []int32, options *AppendOptions) error {
 		NextBlockette:  0,
 		EncodingFormat: int32(m.Type),
 		BitOrder:       int32(m.Order),
-		RecordLength:   int32(recordRength),
+		RecordLength:   int32(recordLength),
 		TimingQuality:  0,
 		Microseconds:   0,
 		FrameCount:     0,

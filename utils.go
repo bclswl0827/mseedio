@@ -51,18 +51,45 @@ func nextPow2(num int) int {
 	return num
 }
 
-// setSignToUint sets signed integer to byte array
+// setSignToUint sets sign to an unsigned integer
 func setSignToUint(value, bitWidth uint32) int32 {
 	if value>>(bitWidth-1) == 1 {
-		offset := int32(math.Pow(2, float64(bitWidth)))
-		return int32(value) - offset
+		offset := int64(math.Pow(2, float64(bitWidth)))
+		return int32(int64(value) - offset)
 	}
 
 	return int32(value)
 }
 
-// getSplitedArray returns bytes by sapce from a number
-func getSplitedArray(number uint, space, bitOrder int) ([]byte, error) {
+// getMergedUint combines bytes into an uint number by its space
+func getMergedUint(data []byte, space, bitOrder int) (uint, error) {
+	if space <= 0 || space > 32 {
+		return 0, fmt.Errorf("invalid bits space value")
+	}
+
+	numSegments := 32 / space
+	if len(data) != numSegments {
+		return 0, fmt.Errorf("invalid data length")
+	}
+
+	var number uint
+
+	if bitOrder == LSBFIRST {
+		for i := 0; i < numSegments; i++ {
+			number |= uint(data[i]) << (space * i)
+		}
+		return number, nil
+	}
+
+	for i := numSegments - 1; i >= 0; i-- {
+		number |= uint(data[i]) << (space * (numSegments - 1 - i))
+	}
+
+	return number, nil
+}
+
+// getSplitedBytes returns bytes by sapce from a number
+func getSplitedBytes(number uint, space, bitOrder int) ([]byte, error) {
 	if space <= 0 || space > 32 {
 		return nil, fmt.Errorf("invalid bits space value")
 	}
