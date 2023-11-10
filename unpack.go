@@ -86,13 +86,7 @@ func unpackSteim1(buffer []byte, samples, bitOrder int) ([]int32, error) {
 		for ii, vv := range v {
 			dat := wn[i][ii]
 			switch vv {
-			case 0: // Non-data information (x0, xn)
-				switch ii {
-				case 0:
-					x0 = int32(dat)
-				case 1:
-					xn = int32(dat)
-				}
+			case 0: // Non-data information
 			case 1: // Contains four 8-bit samples
 				for idx := 0; idx < 4; idx++ {
 					value := (dat >> (24 - idx*8)) & 0xff
@@ -175,13 +169,7 @@ func unpackSteim2(buffer []byte, samples, bitOrder int) ([]int32, error) {
 		for ii, vv := range v {
 			dat := wn[i][ii]
 			switch vv {
-			case 0: // Non-data information (x0, xn)
-				switch ii {
-				case 0:
-					x0 = int32(dat)
-				case 1:
-					xn = int32(dat)
-				}
+			case 0: // Non-data information
 			case 1: // Contains four 8-bit differences
 				arr, err := getSplitedBytes(uint(dat), 8, bitOrder)
 				if err != nil {
