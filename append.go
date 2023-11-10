@@ -117,9 +117,9 @@ func (m *MiniSeedData) Append(data []int32, options *AppendOptions) error {
 	ds.Decoded = append(ds.Decoded, data)
 	ds.RawData = append(ds.RawData, dataBytes...)
 	m.Series = append(m.Series, dataSeries{
-		FixedSection:     &fs,
-		BlocketteSection: &bs,
-		DataSection:      &ds,
+		FixedSection:     fs,
+		BlocketteSection: bs,
+		DataSection:      ds,
 	})
 
 	// Updating counters

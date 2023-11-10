@@ -19,8 +19,8 @@ func main() {
 
 	// Print structured data
 	for _, v := range miniseed.Series {
-		printFields(*v.FixedSection)
-		printFields(*v.BlocketteSection)
+		printFields(v.FixedSection)
+		printFields(v.BlocketteSection)
 		fmt.Println("DataSeries:", v.DataSection.Decoded)
 		fmt.Println()
 	}

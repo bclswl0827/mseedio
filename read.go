@@ -2,6 +2,7 @@ package mseedio
 
 import (
 	"bufio"
+	"fmt"
 	"os"
 )
 
@@ -27,6 +28,12 @@ func (m *MiniSeedData) Read(filePath string) error {
 		bytes = append(bytes, buffer[:n]...)
 	}
 
+	// Return error if length is less than 48 bytes
+	if len(bytes) < 48 {
+		err := fmt.Errorf("file length is less than 48 bytes")
+		return err
+	}
+
 	// Guess data bit order
 	bitOrder, err := getBitOrder(bytes[46:48])
 	if err != nil {
@@ -48,11 +55,10 @@ func (m *MiniSeedData) Read(filePath string) error {
 		// Parse fixed section
 		fsOffset := i + FIXED_SECTION_LENGTH
 		err := fs.Parse(bytes[i:fsOffset], bitOrder)
-		if fs.SectionEndOffset != FIXED_SECTION_LENGTH ||
-			err != nil || (fs.DataQuality != "D" &&
-			fs.DataQuality != "R" &&
-			fs.DataQuality != "Q" &&
-			fs.DataQuality != "M") {
+		if err != nil ||
+			fs.SectionEndOffset != FIXED_SECTION_LENGTH ||
+			(fs.DataQuality != "D" && fs.DataQuality != "R" &&
+				fs.DataQuality != "Q" && fs.DataQuality != "M") {
 			continue
 		}
 
@@ -69,7 +75,7 @@ func (m *MiniSeedData) Read(filePath string) error {
 			bs.EncodingFormat = int32(bytes[fsOffset:bsOffset][12])
 		}
 
-		// Set position [start:end]
+		// Set slice position [start:end]
 		fs.ReaderOffset = sectionOffset{
 			i, fsOffset,
 		}
@@ -77,7 +83,7 @@ func (m *MiniSeedData) Read(filePath string) error {
 			fsOffset, bsOffset,
 		}
 
-		// Set start time and sample
+		// Set global start time
 		if i == 0 {
 			m.StartTime = fs.StartTime
 		}
@@ -95,11 +101,7 @@ func (m *MiniSeedData) Read(filePath string) error {
 		var fs = fixedSection{}
 		var fsOffset = i + FIXED_SECTION_LENGTH
 		err := fs.Parse(bytes[i:fsOffset], bitOrder)
-		if fs.SectionEndOffset == FIXED_SECTION_LENGTH &&
-			err == nil && (fs.DataQuality == "D" ||
-			fs.DataQuality == "R" ||
-			fs.DataQuality == "Q" ||
-			fs.DataQuality == "M") {
+		if err == nil && fs.SectionEndOffset == FIXED_SECTION_LENGTH {
 			initLength = i
 			break
 		}
@@ -108,30 +110,33 @@ func (m *MiniSeedData) Read(filePath string) error {
 		initLength = len(bytes)
 	}
 
-	// Detect each frame length automatically
+	// Detect rest each frame length automatically
 	var (
-		frameLength []int
+		frameLength = []int{initLength}
 		lastOffset  sectionOffset
 	)
-	for i, v := range fixedSections {
-		if i == 0 {
-			frameLength = append(frameLength, initLength)
-		} else {
-			frameLength = append(frameLength, v.ReaderOffset.Start-lastOffset.Start)
-		}
-		lastOffset = v.ReaderOffset
+	for i := 1; i < len(fixedSections); i++ {
+		readerOffset := fixedSections[i].ReaderOffset
+		frameLength = append(frameLength, readerOffset.Start-lastOffset.Start)
+		lastOffset = readerOffset
 	}
 
 	// Parse data series section
-	for i, v := range blocketteSections {
-		// Parse data section
-		var ds = dataSection{}
-		var dsOffset = fixedSections[i].ReaderOffset.Start + frameLength[i]
+	for i := 0; i < len(fixedSections); i++ {
+		var (
+			endIndex   = len(bytes)
+			startIndex = blocketteSections[i].ReaderOffset.End
+		)
+		if i != len(fixedSections)-1 {
+			endIndex = fixedSections[i].ReaderOffset.Start + frameLength[i+1]
+		}
+
+		var ds dataSection
 		err = ds.Parse(
-			bytes[v.ReaderOffset.End:dsOffset],
+			bytes[startIndex:endIndex],
 			int(fixedSections[i].SamplesNumber),
-			int(v.BlocketteCode),
-			int(v.EncodingFormat),
+			int(blocketteSections[i].BlocketteCode),
+			int(blocketteSections[i].EncodingFormat),
 			bitOrder,
 		)
 		if err != nil {
@@ -140,9 +145,9 @@ func (m *MiniSeedData) Read(filePath string) error {
 
 		// Append data series
 		m.Series = append(m.Series, dataSeries{
-			BlocketteSection: &v,
-			DataSection:      &ds,
-			FixedSection:     &fixedSections[i],
+			DataSection:      ds,
+			FixedSection:     fixedSections[i],
+			BlocketteSection: blocketteSections[i],
 		})
 	}
 
