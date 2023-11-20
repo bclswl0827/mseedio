@@ -168,23 +168,19 @@ func disassembleTime(t time.Time, bitOrder int) []byte {
 	days := getDaysByDate(t)
 	hour, min, sec := t.Hour(), t.Minute(), t.Second()
 	nsec := t.Nanosecond() / 100000
-
-	var data []byte
 	if bitOrder == LSBFIRST {
-		data = []byte{
+		return []byte{
 			byte(year & 0xFF), byte(year >> 8),
 			byte(days & 0xFF), byte(days >> 8),
 			byte(hour), byte(min), byte(sec),
 			byte(nsec & 0xFF), byte((nsec >> 8) & 0xFF), byte(nsec >> 16),
 		}
-	} else {
-		data = []byte{
-			byte(year >> 8), byte(year & 0xFF),
-			byte(days >> 8), byte(days & 0xFF),
-			byte(hour), byte(min), byte(sec),
-			byte(nsec >> 16), byte((nsec >> 8) & 0xFF), byte(nsec & 0xFF),
-		}
 	}
 
-	return data
+	return []byte{
+		byte(year >> 8), byte(year & 0xFF),
+		byte(days >> 8), byte(days & 0xFF),
+		byte(hour), byte(min), byte(sec),
+		byte(nsec >> 16), byte((nsec >> 8) & 0xFF), byte(nsec & 0xFF),
+	}
 }
