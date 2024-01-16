@@ -17,9 +17,9 @@ func main() {
 
 	// Append records and increment sequence number
 	startTime := time.Now()
-	for i := 0; i < 60; i++ {
+	for i := 0; i < 600; i++ {
 		// Generate random data
-		data, err := getRandomData(101, -1000, 1000)
+		data, err := getRandomData(100, -1000, 1000)
 		if err != nil {
 			fmt.Println(err)
 			return

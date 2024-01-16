@@ -15,11 +15,6 @@ func (m *MiniSeedData) Append(data []int32, options *AppendOptions) error {
 		}
 	}
 
-	// Data length must be greater than sample rate
-	if int(options.SampleRate) >= len(data) {
-		return fmt.Errorf("data length must be greater than sample rate")
-	}
-
 	// Pack the data
 	var dataBytes []byte
 	switch m.Type {
