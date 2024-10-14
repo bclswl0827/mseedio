@@ -1,6 +1,7 @@
 package mseedio
 
 import (
+	"bufio"
 	"os"
 )
 
@@ -10,7 +11,6 @@ func (m *MiniSeedData) Write(filePath string, writeMode int, dataBytes []byte) e
 		err  error
 		file *os.File
 	)
-
 	if writeMode == APPEND {
 		file, err = os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	} else {
@@ -22,7 +22,13 @@ func (m *MiniSeedData) Write(filePath string, writeMode int, dataBytes []byte) e
 	}
 	defer file.Close()
 
-	_, err = file.Write(dataBytes)
+	writer := bufio.NewWriter(file)
+	_, err = writer.Write(dataBytes)
+	if err != nil {
+		return err
+	}
+
+	err = writer.Flush()
 	if err != nil {
 		return err
 	}
