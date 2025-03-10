@@ -64,6 +64,9 @@ func (m *MiniSeedData) Read(filePath string) error {
 
 		// Parse blockette
 		bsOffset := i + int(fs.DataStartOffset)
+		if bsOffset >= len(bytes) {
+			break
+		}
 		err = bs.Parse(bytes[fsOffset:bsOffset], bitOrder)
 		if err != nil {
 			continue
