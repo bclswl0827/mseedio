@@ -42,14 +42,14 @@ func (m *MiniSeedData) Read(filePath string) error {
 
 	// Parse fixed and blockette sections
 	var (
-		fixedSections     = []fixedSection{}
-		blocketteSections = []blocketteSection{}
+		fixedSections     = []FixedSection{}
+		blocketteSections = []BlocketteSection{}
 		samplesNumber     = 0 // Total number of samples
 	)
 	for i := 0; i < len(bytes); i += 64 {
 		var (
-			fs = fixedSection{}
-			bs = blocketteSection{}
+			fs = FixedSection{}
+			bs = BlocketteSection{}
 		)
 
 		// Parse fixed section
@@ -79,10 +79,10 @@ func (m *MiniSeedData) Read(filePath string) error {
 		}
 
 		// Set slice position [start:end]
-		fs.ReaderOffset = sectionOffset{
+		fs.ReaderOffset = SectionOffset{
 			i, fsOffset,
 		}
-		bs.ReaderOffset = sectionOffset{
+		bs.ReaderOffset = SectionOffset{
 			fsOffset, bsOffset,
 		}
 
@@ -101,7 +101,7 @@ func (m *MiniSeedData) Read(filePath string) error {
 	var initLength int
 	for i := 64; i < len(bytes); i += 64 {
 		// Parse fixed section again
-		var fs = fixedSection{}
+		var fs = FixedSection{}
 		var fsOffset = i + FIXED_SECTION_LENGTH
 		err := fs.Parse(bytes[i:fsOffset], bitOrder)
 		if err == nil && fs.SectionEndOffset == FIXED_SECTION_LENGTH {
@@ -116,7 +116,7 @@ func (m *MiniSeedData) Read(filePath string) error {
 	// Detect rest each frame length automatically
 	var (
 		frameLength = []int{initLength}
-		lastOffset  sectionOffset
+		lastOffset  SectionOffset
 	)
 	for i := 1; i < len(fixedSections); i++ {
 		readerOffset := fixedSections[i].ReaderOffset
@@ -134,7 +134,7 @@ func (m *MiniSeedData) Read(filePath string) error {
 			endIndex = fixedSections[i].ReaderOffset.Start + frameLength[i+1]
 		}
 
-		var ds dataSection
+		var ds DataSection
 		err = ds.Parse(
 			bytes[startIndex:endIndex],
 			int(fixedSections[i].SamplesNumber),
@@ -147,7 +147,7 @@ func (m *MiniSeedData) Read(filePath string) error {
 		}
 
 		// Append data series
-		m.Series = append(m.Series, dataSeries{
+		m.Series = append(m.Series, DataSeries{
 			DataSection:      ds,
 			FixedSection:     fixedSections[i],
 			BlocketteSection: blocketteSections[i],

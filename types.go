@@ -35,13 +35,13 @@ const (
 )
 
 // sectionOffset is used when parsing a MiniSeed record
-type sectionOffset struct {
+type SectionOffset struct {
 	Start int
 	End   int
 }
 
 // fixedSection is the fixed header section of a MiniSeed record
-type fixedSection struct {
+type FixedSection struct {
 	SequenceNumber   string
 	DataQuality      string
 	StationCode      string
@@ -59,11 +59,11 @@ type fixedSection struct {
 	TimeCorrection   int32
 	DataStartOffset  int32
 	SectionEndOffset int32
-	ReaderOffset     sectionOffset // Used when parsing
+	ReaderOffset     SectionOffset // Used when parsing
 }
 
 // blocketteSection is the blockette header section of a MiniSeed record
-type blocketteSection struct {
+type BlocketteSection struct {
 	BlocketteCode  int32         // Blockette 100*
 	NextBlockette  int32         // Blockette 100*
 	EncodingFormat int32         // Blockette 1000
@@ -72,20 +72,20 @@ type blocketteSection struct {
 	TimingQuality  int32         // Blockette 1001
 	Microseconds   int32         // Blockette 1001
 	FrameCount     int32         // Blockette 1001
-	ReaderOffset   sectionOffset // Used when parsing
+	ReaderOffset   SectionOffset // Used when parsing
 }
 
 // dataSection includes the decoded data and the raw data
-type dataSection struct {
+type DataSection struct {
 	Decoded []any
 	RawData []byte
 }
 
 // dataSeries corresponds to a single data series in a MiniSeed record
-type dataSeries struct {
-	DataSection      dataSection
-	FixedSection     fixedSection
-	BlocketteSection blocketteSection
+type DataSeries struct {
+	DataSection      DataSection
+	FixedSection     FixedSection
+	BlocketteSection BlocketteSection
 }
 
 // sectionMap is used when parsing a MiniSeed record
@@ -103,7 +103,7 @@ type MiniSeedData struct {
 	Samples   int
 	StartTime time.Time
 	EndTime   time.Time
-	Series    []dataSeries
+	Series    []DataSeries
 }
 
 // AppendOptions is used when appending a MiniSeed record

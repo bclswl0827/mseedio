@@ -6,7 +6,7 @@ import (
 )
 
 // f.Compose() compose a fixed section to bytes
-func (f *fixedSection) Compose(bitOrder int) ([]byte, error) {
+func (f *FixedSection) Compose(bitOrder int) ([]byte, error) {
 
 	var (
 		result    []byte
@@ -50,7 +50,7 @@ func (f *fixedSection) Compose(bitOrder int) ([]byte, error) {
 }
 
 // b.Compose() compose an 1000-blockette section to bytes
-func (b *blocketteSection) Compose(bitOrder int) ([]byte, error) {
+func (b *BlocketteSection) Compose(bitOrder int) ([]byte, error) {
 	var blocketteLength int
 	for _, field := range blockette1000SectionMap {
 		blocketteLength += field.FieldSize

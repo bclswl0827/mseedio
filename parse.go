@@ -6,7 +6,7 @@ import (
 )
 
 // f.Parse() parses MiniSeedData fixed section
-func (f *fixedSection) Parse(buffer []byte, bitOrder int) error {
+func (f *FixedSection) Parse(buffer []byte, bitOrder int) error {
 	t := reflect.ValueOf(f).Elem()
 
 	for i, j := 0, 0; i < FIXED_SECTION_LENGTH; j++ {
@@ -42,7 +42,7 @@ func (f *fixedSection) Parse(buffer []byte, bitOrder int) error {
 }
 
 // b.Parse() parses MiniSeedData blockette section
-func (b *blocketteSection) Parse(buffer []byte, bitOrder int) error {
+func (b *BlocketteSection) Parse(buffer []byte, bitOrder int) error {
 	t := reflect.ValueOf(b).Elem()
 
 	blkTyp, err := getBlocketteType(buffer, bitOrder)
@@ -123,7 +123,7 @@ func (b *blocketteSection) Parse(buffer []byte, bitOrder int) error {
 }
 
 // d.Parse() parses MiniSeedData data section
-func (d *dataSection) Parse(buffer []byte, samples, blockette, encoding, bitOrder int) error {
+func (d *DataSection) Parse(buffer []byte, samples, blockette, encoding, bitOrder int) error {
 	d.RawData = buffer
 
 	switch encoding {

@@ -55,7 +55,7 @@ func (m *MiniSeedData) Append(data []int32, options *AppendOptions) error {
 	}
 
 	// Set blockette section
-	bs := blocketteSection{
+	bs := BlocketteSection{
 		BlocketteCode:  1000,
 		NextBlockette:  0,
 		EncodingFormat: int32(m.Type),
@@ -81,7 +81,7 @@ func (m *MiniSeedData) Append(data []int32, options *AppendOptions) error {
 	}
 
 	// Set fixed section
-	fs := fixedSection{
+	fs := FixedSection{
 		DataQuality:      "D",
 		SequenceNumber:   options.SequenceNumber,
 		StationCode:      options.StationCode,
@@ -108,10 +108,10 @@ func (m *MiniSeedData) Append(data []int32, options *AppendOptions) error {
 	m.EndTime = options.StartTime
 
 	// Appending the new data series
-	ds := dataSection{}
+	ds := DataSection{}
 	ds.Decoded = append(ds.Decoded, data)
 	ds.RawData = append(ds.RawData, dataBytes...)
-	m.Series = append(m.Series, dataSeries{
+	m.Series = append(m.Series, DataSeries{
 		FixedSection:     fs,
 		BlocketteSection: bs,
 		DataSection:      ds,
