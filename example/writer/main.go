@@ -1,9 +1,8 @@
 package main
 
 import (
-	"crypto/rand"
 	"fmt"
-	"math/big"
+	"math"
 	"time"
 
 	"github.com/bclswl0827/mseedio"
@@ -13,22 +12,24 @@ func main() {
 	var miniseed mseedio.MiniSeedData
 
 	// Init header fields
-	miniseed.Init(mseedio.STEIM2, mseedio.MSBFIRST)
+	miniseed.Init(mseedio.INT32, mseedio.MSBFIRST)
 
-	// Append records and increment sequence number
+	// For generating test waveform
+	const (
+		sampleRate       = 100
+		sineFreq         = 2.0
+		amplitude        = 1000.0
+		samplesPerRecord = 100
+	)
+
 	startTime := time.Now()
 	for i := 0; i < 600; i++ {
-		// Generate random data
-		data, err := getRandomData(100, -1000, 1000)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
+		data := getSineWaveData(samplesPerRecord, sampleRate, sineFreq, amplitude, float64(i*samplesPerRecord))
+		t := startTime.Add(time.Duration(i*samplesPerRecord) * time.Second / time.Duration(sampleRate))
 
 		// Append records
-		t := startTime.Add(time.Second)
-		err = miniseed.Append(data, &mseedio.AppendOptions{
-			SampleRate:     100,
+		err := miniseed.Append(data, &mseedio.AppendOptions{
+			SampleRate:     sampleRate,
 			StartTime:      t,
 			SequenceNumber: fmt.Sprintf("%06d", i+1),
 			StationCode:    "AAAAA",
@@ -40,8 +41,6 @@ func main() {
 			fmt.Println(err)
 			return
 		}
-
-		startTime = t
 	}
 
 	// Encode data
@@ -61,25 +60,12 @@ func main() {
 	fmt.Println("Write success")
 }
 
-func getRandomData(length int, min, max int32) ([]int32, error) {
-	if max <= min {
-		return nil, fmt.Errorf("invalid range")
-	}
-
-	if length < 0 {
-		return nil, fmt.Errorf("invalid length")
-	}
-
+func getSineWaveData(length int, sampleRate int, frequency float64, amplitude float64, phaseOffset float64) []int32 {
 	data := make([]int32, length)
-	rangeSize := int64(max - min + 1)
-
 	for i := 0; i < length; i++ {
-		randomBigInt, err := rand.Int(rand.Reader, big.NewInt(rangeSize))
-		if err != nil {
-			return nil, err
-		}
-		data[i] = min + int32(randomBigInt.Int64())
+		t := float64(i) / float64(sampleRate)
+		theta := 2 * math.Pi * frequency * (t + phaseOffset/float64(sampleRate))
+		data[i] = int32(amplitude * math.Sin(theta))
 	}
-
-	return data, nil
+	return data
 }
