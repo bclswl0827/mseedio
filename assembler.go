@@ -73,11 +73,9 @@ func assembleTime(data []byte, bitOrder int) time.Time {
 		sec = int(data[6])
 		nsec = int(data[7])<<16 | int(data[8])<<8 | int(data[9])
 	}
-	nsec *= 100000
 
 	md := getMonthByDays(year, days)
-	offset := time.Duration(nsec) * time.Nanosecond
-	return time.Date(year, md.Month(), md.Day(), hour, min, sec, 0, time.UTC).Add(offset)
+	return time.Date(year, md.Month(), md.Day(), hour, min, sec, nsec, time.UTC)
 }
 
 // assembleFloat32 assembles a float32 from 4 bytes
