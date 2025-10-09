@@ -3,21 +3,25 @@ package mseedio
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"os"
 )
 
 // m.Read() reads miniSEED file to structured MiniSeedData
 func (m *MiniSeedData) Read(filePath string) error {
-	// Open miniSEED file
 	file, err := os.Open(filePath)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	// Read file to bytes
+	return m.ReadFromReader(file)
+}
+
+// m.ReadFromReader() reads miniSEED file to structured MiniSeedData
+func (m *MiniSeedData) ReadFromReader(data io.Reader) error {
 	var bytes []byte
-	reader := bufio.NewReader(file)
+	reader := bufio.NewReader(data)
 	buffer := make([]byte, 1024)
 	for {
 		n, err := reader.Read(buffer)
