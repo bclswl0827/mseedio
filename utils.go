@@ -3,7 +3,6 @@ package mseedio
 import (
 	"fmt"
 	"math"
-	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -88,7 +87,7 @@ func getMergedUint(data []byte, space, bitOrder int) (uint, error) {
 	return number, nil
 }
 
-// getSplitedBytes returns bytes by sapce from a number
+// getSplitedBytes splits a number into bytes by the given bit space
 func getSplitedBytes(number uint, space, bitOrder int) ([]byte, error) {
 	if space <= 0 || space > 32 {
 		return nil, fmt.Errorf("invalid bits space value")
@@ -145,45 +144,17 @@ func getBlocketteType(buffer []byte, bitOrder int) (int32, error) {
 	return typ, nil
 }
 
-// getDaysByDate returns days of year
+// getDaysByDate returns the day of the year (1-366).
 func getDaysByDate(date time.Time) int {
 	return date.YearDay()
 }
 
-// getMonthByDays returns month by days of year
+// getMonthByDays converts a day-of-year into a time.Time, relying on
+// time.Date's normalization so callers can read out the month and day.
 func getMonthByDays(year, days int) time.Time {
 	if days < 1 || days > 366 {
 		return time.Time{}
 	}
 
 	return time.Date(year, time.January, days, 0, 0, 0, 0, time.UTC)
-}
-
-// getStructFieldValue gets the value of a struct field with reflection
-func getStructFieldValue(v reflect.Value, fieldName string) (any, error) {
-	field := v.FieldByName(fieldName)
-	if !field.IsValid() {
-		return nil, fmt.Errorf("field %s does not exist", fieldName)
-	}
-
-	return field.Interface(), nil
-}
-
-// setStructFieldValue sets the value of a struct field with reflection
-func setStructFieldValue(v reflect.Value, fieldName string, fieldValue any) error {
-	field := v.FieldByName(fieldName)
-	if !field.IsValid() {
-		return fmt.Errorf("field %s does not exist", fieldName)
-	}
-
-	if !field.CanSet() {
-		return fmt.Errorf("cannot set field %s", fieldName)
-	}
-
-	if field.Type().Kind() != reflect.TypeOf(fieldValue).Kind() {
-		return fmt.Errorf("type mismatch for field %s", fieldName)
-	}
-
-	field.Set(reflect.ValueOf(fieldValue))
-	return nil
 }

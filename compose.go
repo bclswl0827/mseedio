@@ -1,101 +1,41 @@
 package mseedio
 
-import (
-	"reflect"
-	"time"
-)
-
-// f.Compose() compose a fixed section to bytes
+// Compose serializes the fixed section into its 48-byte on-disk form. String
+// fields are space-padded and the reserved byte is written as a space, matching
+// the SEED fixed-header convention.
 func (f *FixedSection) Compose(bitOrder int) ([]byte, error) {
-
-	var (
-		result    []byte
-		dataBytes []byte
-		values    = reflect.ValueOf(f).Elem()
-	)
-	for i, j := 0, 0; i < FIXED_SECTION_LENGTH; j++ {
-		var (
-			field     = fixedSectionMap[j]
-			fieldName = field.FieldName
-		)
-		var (
-			fieldSize       = field.FieldSize
-			filedValue, err = getStructFieldValue(values, fieldName)
-		)
-
-		if err != nil && fieldName != "Reserved" {
-			return nil, err
-		}
-
-		i += fieldSize
-		switch field.FieldType {
-		case "int32":
-			// "int32" bit width should actually be determined by fieldSize
-			result = disassembleInt(filedValue.(int32), fieldSize, bitOrder)
-		case "string":
-			result = disassembleString(filedValue.(string), fieldSize, ' ')
-		case "time.Time":
-			result = disassembleTime(filedValue.(time.Time), bitOrder)
-		}
-
-		// Space as reserved field padding
-		if fieldName == "Reserved" {
-			result = []byte{' '}
-		}
-
-		dataBytes = append(dataBytes, result...)
-	}
-
-	return dataBytes, nil
+	w := &byteWriter{order: bitOrder}
+	w.string(f.SequenceNumber, 6, ' ')
+	w.string(f.DataQuality, 1, ' ')
+	w.pad(1, ' ') // reserved
+	w.string(f.StationCode, 5, ' ')
+	w.string(f.LocationCode, 2, ' ')
+	w.string(f.ChannelCode, 3, ' ')
+	w.string(f.NetworkCode, 2, ' ')
+	w.time(f.StartTime)
+	w.int(f.SamplesNumber, 2)
+	w.int(f.SampleFactor, 2)
+	w.int(f.SampleMultiplier, 2)
+	w.int(f.ActivityFlags, 1)
+	w.int(f.IOClockFlags, 1)
+	w.int(f.DataQualityFlags, 1)
+	w.int(f.BlockettesFollow, 1)
+	w.int(f.TimeCorrection, 4)
+	w.int(f.DataStartOffset, 2)
+	w.int(f.SectionEndOffset, 2)
+	return w.buf, nil
 }
 
-// b.Compose() compose an 1000-blockette section to bytes
+// Compose serializes a blockette 1000 (Data Only SEED) into the fixed
+// BLOCKETTE100X_SECTION_LENGTH-byte area, zero-padding the reserved tail.
 func (b *BlocketteSection) Compose(bitOrder int) ([]byte, error) {
-	var blocketteLength int
-	for _, field := range blockette1000SectionMap {
-		blocketteLength += field.FieldSize
-	}
-
-	var (
-		result    []byte
-		dataBytes []byte
-		values    = reflect.ValueOf(b).Elem()
-	)
-	for i, j := 0, 0; i < blocketteLength; j++ {
-		var (
-			field     = blockette1000SectionMap[j]
-			fieldName = field.FieldName
-		)
-		var (
-			fieldSize       = field.FieldSize
-			filedValue, err = getStructFieldValue(values, fieldName)
-		)
-
-		if err != nil && fieldName != "Reserved" {
-			return nil, err
-		}
-
-		i += fieldSize
-		switch field.FieldType {
-		case "int32":
-			// "int32" bit width should actually be determined by fieldSize
-			result = disassembleInt(filedValue.(int32), fieldSize, bitOrder)
-		case "string":
-			result = disassembleString(filedValue.(string), fieldSize, ' ')
-		}
-
-		// Space as reserved field padding
-		if fieldName == "Reserved" {
-			result = []byte{0}
-		}
-
-		dataBytes = append(dataBytes, result...)
-	}
-
-	// Padding reserved field with 0 (56:64)
-	for i := 0; i < BLOCKETTE100X_SECTION_LENGTH-blocketteLength; i++ {
-		dataBytes = append(dataBytes, 0)
-	}
-
-	return dataBytes, nil
+	w := &byteWriter{order: bitOrder}
+	w.int(b.BlocketteCode, 2)
+	w.int(b.NextBlockette, 2)
+	w.int(b.EncodingFormat, 1)
+	w.int(b.BitOrder, 1)
+	w.int(b.RecordLength, 1)
+	w.pad(1, 0) // reserved
+	w.pad(BLOCKETTE100X_SECTION_LENGTH-len(w.buf), 0)
+	return w.buf, nil
 }

@@ -1,13 +1,12 @@
 package mseedio
 
 import (
-	"bufio"
 	"fmt"
 	"io"
 	"os"
 )
 
-// m.Read() reads miniSEED file to structured MiniSeedData
+// Read parses a miniSEED file at filePath into structured MiniSeedData.
 func (m *MiniSeedData) Read(filePath string) error {
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -18,24 +17,16 @@ func (m *MiniSeedData) Read(filePath string) error {
 	return m.ReadFromReader(file)
 }
 
-// m.ReadFromReader() reads miniSEED file to structured MiniSeedData
+// ReadFromReader parses miniSEED data from an io.Reader into MiniSeedData.
 func (m *MiniSeedData) ReadFromReader(data io.Reader) error {
-	var bytes []byte
-	reader := bufio.NewReader(data)
-	buffer := make([]byte, 1024)
-	for {
-		n, err := reader.Read(buffer)
-		if err != nil {
-			break
-		}
-
-		bytes = append(bytes, buffer[:n]...)
+	bytes, err := io.ReadAll(data)
+	if err != nil {
+		return err
 	}
 
-	// Return error if length is less than 48 bytes
-	if len(bytes) < 48 {
-		err := fmt.Errorf("file length is less than 48 bytes")
-		return err
+	// Return error if length is less than the fixed section
+	if len(bytes) < FIXED_SECTION_LENGTH {
+		return fmt.Errorf("data length is less than %d bytes", FIXED_SECTION_LENGTH)
 	}
 
 	// Guess data bit order

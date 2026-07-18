@@ -11,8 +11,7 @@ func main() {
 	var miniseed mseedio.MiniSeedData
 
 	// Read miniSEED file
-	err := miniseed.Read("./testdata/int32_Steim2_bigEndian.mseed")
-	if err != nil {
+	if err := miniseed.Read("./testdata/int32_Steim2_bigEndian.mseed"); err != nil {
 		fmt.Println(err)
 		return
 	}

@@ -6,179 +6,135 @@ import (
 	"time"
 )
 
-// assembleString assembles a string from bytes
+// byteOrder maps the package bit-order flag to a binary.ByteOrder.
+func byteOrder(bitOrder int) binary.ByteOrder {
+	if bitOrder == LSBFIRST {
+		return binary.LittleEndian
+	}
+	return binary.BigEndian
+}
+
+// assembleString assembles a string from bytes.
 func assembleString(data []byte) string {
 	return string(data)
 }
 
-// assembleInt assembles an int from n bytes
-func assembleInt(data []byte, n int, bitOrder int) int32 {
-	var result int32
-	if bitOrder == LSBFIRST {
-		for i := 0; i < n; i++ {
-			result |= int32(data[i]) << uint(i*8)
-		}
-
-		return result
-	}
-
-	for i := 0; i < n; i++ {
-		result |= int32(data[n-i-1]) << uint(i*8)
-	}
-
-	return result
-}
-
-// assembleUint assembles an uint from n bytes
-func assembleUint(data []byte, n int, bitOrder int) uint32 {
+// assembleUint assembles an unsigned integer from the first n bytes of data,
+// honoring the given bit order.
+func assembleUint(data []byte, n, bitOrder int) uint32 {
 	var result uint32
 	if bitOrder == LSBFIRST {
 		for i := 0; i < n; i++ {
 			result |= uint32(data[i]) << uint(i*8)
 		}
-
 		return result
 	}
 
 	for i := 0; i < n; i++ {
 		result |= uint32(data[n-i-1]) << uint(i*8)
 	}
-
 	return result
 }
 
-// assembleTime assembles a time.Time from 10 bytes
+// assembleInt assembles a signed integer from the first n bytes of data. The
+// value is sign-extended from its n-byte width, so widths narrower than 32 bits
+// (INT16, INT24, signed header fields such as SampleMultiplier) decode negative
+// values correctly.
+func assembleInt(data []byte, n, bitOrder int) int32 {
+	value := assembleUint(data, n, bitOrder)
+
+	bits := uint(n * 8)
+	if bits < 32 && value>>(bits-1)&1 == 1 {
+		value |= ^uint32(0) << bits
+	}
+	return int32(value)
+}
+
+// assembleTime assembles a time.Time from a 10-byte BTIME structure.
 func assembleTime(data []byte, bitOrder int) time.Time {
+	order := byteOrder(bitOrder)
 	var (
-		year int
-		days int
-		hour int
-		min  int
-		sec  int
-		nsec int
+		year = int(order.Uint16(data[0:2]))
+		days = int(order.Uint16(data[2:4]))
+		hour = int(data[4])
+		min  = int(data[5])
+		sec  = int(data[6])
+		// 0.0001-second ticks stored little-/big-endian across bytes 7..9.
+		ticks = int(assembleUint(data[7:10], 3, bitOrder))
 	)
 
-	if bitOrder == LSBFIRST {
-		year = int(data[1])<<8 | int(data[0])
-		days = int(data[3])<<8 | int(data[2])
-		hour = int(data[4])
-		min = int(data[5])
-		sec = int(data[6])
-		nsec = int(data[9])<<16 | int(data[8])<<8 | int(data[7])
-	} else {
-		year = int(data[0])<<8 | int(data[1])
-		days = int(data[2])<<8 | int(data[3])
-		hour = int(data[4])
-		min = int(data[5])
-		sec = int(data[6])
-		nsec = int(data[7])<<16 | int(data[8])<<8 | int(data[9])
-	}
-
 	md := getMonthByDays(year, days)
-	return time.Date(year, md.Month(), md.Day(), hour, min, sec, nsec, time.UTC)
+	return time.Date(year, md.Month(), md.Day(), hour, min, sec, ticks*100000, time.UTC)
 }
 
-// assembleFloat32 assembles a float32 from 4 bytes
+// assembleFloat32 assembles a float32 from 4 bytes.
 func assembleFloat32(data []byte, bitOrder int) float32 {
-	var bits uint32
-	if bitOrder == LSBFIRST {
-		bits = uint32(data[3])<<24 | uint32(data[2])<<16 | uint32(data[1])<<8 | uint32(data[0])
-		return math.Float32frombits(bits)
-	}
-
-	bits = uint32(data[0])<<24 | uint32(data[1])<<16 | uint32(data[2])<<8 | uint32(data[3])
-	return math.Float32frombits(bits)
+	return math.Float32frombits(byteOrder(bitOrder).Uint32(data))
 }
 
-// assembleFloat64 assembles a float64 from 8 bytes
+// assembleFloat64 assembles a float64 from 8 bytes.
 func assembleFloat64(data []byte, bitOrder int) float64 {
-	var bits uint64
-	if bitOrder == LSBFIRST {
-		bits = uint64(data[7])<<56 | uint64(data[6])<<48 | uint64(data[5])<<40 | uint64(data[4])<<32 | uint64(data[3])<<24 | uint64(data[2])<<16 | uint64(data[1])<<8 | uint64(data[0])
-		return math.Float64frombits(bits)
-	}
-
-	bits = uint64(data[0])<<56 | uint64(data[1])<<48 | uint64(data[2])<<40 | uint64(data[3])<<32 | uint64(data[4])<<24 | uint64(data[5])<<16 | uint64(data[6])<<8 | uint64(data[7])
-	return math.Float64frombits(bits)
+	return math.Float64frombits(byteOrder(bitOrder).Uint64(data))
 }
 
-// disassembleInt disassembles an int to bytes
-func disassembleInt(data int32, n int, bitOrder int) []byte {
+// disassembleInt disassembles a signed integer into its low n bytes.
+func disassembleInt(data int32, n, bitOrder int) []byte {
 	bytes := make([]byte, n)
 	if bitOrder == LSBFIRST {
 		for i := 0; i < n; i++ {
 			bytes[i] = byte(data >> uint(i*8))
 		}
-
 		return bytes
 	}
 
 	for i := 0; i < n; i++ {
 		bytes[i] = byte(data >> uint((n-i-1)*8))
 	}
-
 	return bytes
 }
 
-// disassembleFloat disassembles a float to bytes
+// disassembleFloat disassembles a float32 or float64 into bytes.
 func disassembleFloat(data any, bitOrder int) []byte {
+	order := byteOrder(bitOrder)
 	switch v := data.(type) {
 	case float32:
 		bytes := make([]byte, 4)
-		if bitOrder == LSBFIRST {
-			binary.LittleEndian.PutUint32(bytes, math.Float32bits(v))
-			return bytes
-		}
-		binary.BigEndian.PutUint32(bytes, math.Float32bits(v))
+		order.PutUint32(bytes, math.Float32bits(v))
 		return bytes
 	case float64:
 		bytes := make([]byte, 8)
-		if bitOrder == LSBFIRST {
-			binary.LittleEndian.PutUint64(bytes, math.Float64bits(v))
-			return bytes
-		}
-		binary.BigEndian.PutUint64(bytes, math.Float64bits(v))
+		order.PutUint64(bytes, math.Float64bits(v))
 		return bytes
 	}
-
 	return nil
 }
 
-// disassembleString disassembles a string to bytes
+// disassembleString disassembles a string into exactly length bytes, truncating
+// or right-padding with the given padding byte as needed.
 func disassembleString(data string, length int, padding byte) []byte {
-	if len(data) > length {
-		data = data[:length]
-	} else if len(data) < length {
-		zeroPadding := make([]byte, length-len(data))
-		// fill padding
-		for i := range zeroPadding {
-			zeroPadding[i] = padding
-		}
-		data += string(zeroPadding)
+	if len(data) >= length {
+		return []byte(data[:length])
 	}
 
-	return []byte(data)
+	out := make([]byte, length)
+	n := copy(out, data)
+	for i := n; i < length; i++ {
+		out[i] = padding
+	}
+	return out
 }
 
-// disassembleTime disassembles a time.Time to 10 bytes
+// disassembleTime disassembles a time.Time into a 10-byte BTIME structure.
 func disassembleTime(t time.Time, bitOrder int) []byte {
-	year := t.Year()
-	days := getDaysByDate(t)
-	hour, min, sec := t.Hour(), t.Minute(), t.Second()
-	nsec := t.Nanosecond() / 100000
-	if bitOrder == LSBFIRST {
-		return []byte{
-			byte(year & 0xFF), byte(year >> 8),
-			byte(days & 0xFF), byte(days >> 8),
-			byte(hour), byte(min), byte(sec),
-			byte(nsec & 0xFF), byte((nsec >> 8) & 0xFF), byte(nsec >> 16),
-		}
-	}
+	order := byteOrder(bitOrder)
+	ticks := t.Nanosecond() / 100000 // 0.0001-second units
 
-	return []byte{
-		byte(year >> 8), byte(year & 0xFF),
-		byte(days >> 8), byte(days & 0xFF),
-		byte(hour), byte(min), byte(sec),
-		byte(nsec >> 16), byte((nsec >> 8) & 0xFF), byte(nsec & 0xFF),
-	}
+	out := make([]byte, 10)
+	order.PutUint16(out[0:2], uint16(t.Year()))
+	order.PutUint16(out[2:4], uint16(getDaysByDate(t)))
+	out[4] = byte(t.Hour())
+	out[5] = byte(t.Minute())
+	out[6] = byte(t.Second())
+	copy(out[7:10], disassembleInt(int32(ticks), 3, bitOrder))
+	return out
 }

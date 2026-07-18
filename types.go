@@ -88,13 +88,6 @@ type DataSeries struct {
 	BlocketteSection BlocketteSection
 }
 
-// sectionMap is used when parsing a MiniSeed record
-type sectionMap struct {
-	FieldName string
-	FieldType string
-	FieldSize int
-}
-
 // MiniSeedData is the main struct for a MiniSeed record
 type MiniSeedData struct {
 	Type      int
@@ -116,45 +109,3 @@ type AppendOptions struct {
 	NetworkCode    string
 	StartTime      time.Time
 }
-
-var (
-	// field name, field type, field size
-	fixedSectionMap = []sectionMap{
-		{"SequenceNumber", "string", 6},
-		{"DataQuality", "string", 1},
-		{"Reserved", "", 1},
-		{"StationCode", "string", 5},
-		{"LocationCode", "string", 2},
-		{"ChannelCode", "string", 3},
-		{"NetworkCode", "string", 2},
-		{"StartTime", "time.Time", 10},
-		{"SamplesNumber", "int32", 2},
-		{"SampleFactor", "int32", 2},
-		{"SampleMultiplier", "int32", 2},
-		{"ActivityFlags", "int32", 1},
-		{"IOClockFlags", "int32", 1},
-		{"DataQualityFlags", "int32", 1},
-		{"BlockettesFollow", "int32", 1},
-		{"TimeCorrection", "int32", 4},
-		{"DataStartOffset", "int32", 2},
-		{"SectionEndOffset", "int32", 2},
-	}
-	// field name, field type, field size
-	blockette1000SectionMap = []sectionMap{
-		{"BlocketteCode", "int32", 2},
-		{"NextBlockette", "int32", 2},
-		{"EncodingFormat", "int32", 1},
-		{"BitOrder", "int32", 1},
-		{"RecordLength", "int32", 1},
-		{"Reserved", "", 1},
-	}
-	// field name, field type, field size
-	blockette1001SectionMap = []sectionMap{
-		{"BlocketteCode", "int32", 2},
-		{"NextBlockette", "int32", 2},
-		{"TimingQuality", "int32", 1},
-		{"Microseconds", "int32", 1},
-		{"Reserved", "", 1},
-		{"FrameCount", "int32", 1},
-	}
-)

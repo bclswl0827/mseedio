@@ -2,10 +2,11 @@ package mseedio
 
 import "fmt"
 
-// m.Init() initialize MiniSeedData with data type and bit order
+// Init prepares an empty MiniSeedData with the given encoding type and bit
+// order, ready for Append. It fails if the record already holds data series.
 func (m *MiniSeedData) Init(dataType, bitOrder int) error {
 	if len(m.Series) > 0 {
-		return fmt.Errorf("empty data series is required")
+		return fmt.Errorf("cannot initialize a MiniSeedData that already has data series")
 	}
 
 	m.Type = dataType
