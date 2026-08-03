@@ -52,19 +52,33 @@ func assembleInt(data []byte, n, bitOrder int) int32 {
 
 // assembleTime assembles a time.Time from a 10-byte BTIME structure.
 func assembleTime(data []byte, bitOrder int) time.Time {
-	order := byteOrder(bitOrder)
 	var (
-		year = int(order.Uint16(data[0:2]))
-		days = int(order.Uint16(data[2:4]))
-		hour = int(data[4])
-		min  = int(data[5])
-		sec  = int(data[6])
-		// 0.0001-second ticks stored little-/big-endian across bytes 7..9.
-		ticks = int(assembleUint(data[7:10], 3, bitOrder))
+		year int
+		days int
+		hour int
+		min  int
+		sec  int
+		nsec int
 	)
 
+	if bitOrder == LSBFIRST {
+		year = int(data[1])<<8 | int(data[0])
+		days = int(data[3])<<8 | int(data[2])
+		hour = int(data[4])
+		min = int(data[5])
+		sec = int(data[6])
+		nsec = int(data[9])<<16 | int(data[8])<<8 | int(data[7])
+	} else {
+		year = int(data[0])<<8 | int(data[1])
+		days = int(data[2])<<8 | int(data[3])
+		hour = int(data[4])
+		min = int(data[5])
+		sec = int(data[6])
+		nsec = int(data[7])<<16 | int(data[8])<<8 | int(data[9])
+	}
+
 	md := getMonthByDays(year, days)
-	return time.Date(year, md.Month(), md.Day(), hour, min, sec, ticks*100000, time.UTC)
+	return time.Date(year, md.Month(), md.Day(), hour, min, sec, nsec, time.UTC)
 }
 
 // assembleFloat32 assembles a float32 from 4 bytes.
@@ -126,15 +140,23 @@ func disassembleString(data string, length int, padding byte) []byte {
 
 // disassembleTime disassembles a time.Time into a 10-byte BTIME structure.
 func disassembleTime(t time.Time, bitOrder int) []byte {
-	order := byteOrder(bitOrder)
-	ticks := t.Nanosecond() / 100000 // 0.0001-second units
+	year := t.Year()
+	days := getDaysByDate(t)
+	hour, min, sec := t.Hour(), t.Minute(), t.Second()
+	nsec := t.Nanosecond() / 100000
+	if bitOrder == LSBFIRST {
+		return []byte{
+			byte(year & 0xFF), byte(year >> 8),
+			byte(days & 0xFF), byte(days >> 8),
+			byte(hour), byte(min), byte(sec),
+			byte(nsec & 0xFF), byte((nsec >> 8) & 0xFF), byte(nsec >> 16),
+		}
+	}
 
-	out := make([]byte, 10)
-	order.PutUint16(out[0:2], uint16(t.Year()))
-	order.PutUint16(out[2:4], uint16(getDaysByDate(t)))
-	out[4] = byte(t.Hour())
-	out[5] = byte(t.Minute())
-	out[6] = byte(t.Second())
-	copy(out[7:10], disassembleInt(int32(ticks), 3, bitOrder))
-	return out
+	return []byte{
+		byte(year >> 8), byte(year & 0xFF),
+		byte(days >> 8), byte(days & 0xFF),
+		byte(hour), byte(min), byte(sec),
+		byte(nsec >> 16), byte((nsec >> 8) & 0xFF), byte(nsec & 0xFF),
+	}
 }
