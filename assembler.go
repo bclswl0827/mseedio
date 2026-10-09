@@ -52,33 +52,25 @@ func assembleInt(data []byte, n, bitOrder int) int32 {
 
 // assembleTime assembles a time.Time from a 10-byte BTIME structure.
 func assembleTime(data []byte, bitOrder int) time.Time {
-	var (
-		year int
-		days int
-		hour int
-		min  int
-		sec  int
-		nsec int
+	order := byteOrder(bitOrder)
+
+	year := int(order.Uint16(data[0:2]))
+	day := int(order.Uint16(data[2:4]))
+
+	hour := int(data[4])
+	minute := int(data[5])
+	second := int(data[6])
+
+	// BTIME byte 7 is reserved.
+	// Bytes 8-9 contain fractional seconds in 0.0001s units.
+	fraction := int(order.Uint16(data[8:10]))
+	nsec := fraction * 100_000
+
+	return time.Date(
+		year, time.January, day,
+		hour, minute, second, nsec,
+		time.UTC,
 	)
-
-	if bitOrder == LSBFIRST {
-		year = int(data[1])<<8 | int(data[0])
-		days = int(data[3])<<8 | int(data[2])
-		hour = int(data[4])
-		min = int(data[5])
-		sec = int(data[6])
-		nsec = int(data[9])<<16 | int(data[8])<<8 | int(data[7])
-	} else {
-		year = int(data[0])<<8 | int(data[1])
-		days = int(data[2])<<8 | int(data[3])
-		hour = int(data[4])
-		min = int(data[5])
-		sec = int(data[6])
-		nsec = int(data[7])<<16 | int(data[8])<<8 | int(data[9])
-	}
-
-	md := getMonthByDays(year, days)
-	return time.Date(year, md.Month(), md.Day(), hour, min, sec, nsec, time.UTC)
 }
 
 // assembleFloat32 assembles a float32 from 4 bytes.
@@ -140,23 +132,22 @@ func disassembleString(data string, length int, padding byte) []byte {
 
 // disassembleTime disassembles a time.Time into a 10-byte BTIME structure.
 func disassembleTime(t time.Time, bitOrder int) []byte {
-	year := t.Year()
-	days := getDaysByDate(t)
-	hour, min, sec := t.Hour(), t.Minute(), t.Second()
-	nsec := t.Nanosecond() / 100000
-	if bitOrder == LSBFIRST {
-		return []byte{
-			byte(year & 0xFF), byte(year >> 8),
-			byte(days & 0xFF), byte(days >> 8),
-			byte(hour), byte(min), byte(sec),
-			byte(nsec & 0xFF), byte((nsec >> 8) & 0xFF), byte(nsec >> 16),
-		}
-	}
+	order := byteOrder(bitOrder)
+	data := make([]byte, 10)
 
-	return []byte{
-		byte(year >> 8), byte(year & 0xFF),
-		byte(days >> 8), byte(days & 0xFF),
-		byte(hour), byte(min), byte(sec),
-		byte(nsec >> 16), byte((nsec >> 8) & 0xFF), byte(nsec & 0xFF),
-	}
+	order.PutUint16(data[0:2], uint16(t.Year()))
+	order.PutUint16(data[2:4], uint16(t.YearDay()))
+
+	data[4] = byte(t.Hour())
+	data[5] = byte(t.Minute())
+	data[6] = byte(t.Second())
+
+	// Reserved byte must be zero when writing.
+	data[7] = 0
+
+	// BTIME supports 0.0001-second precision.
+	fraction := uint16(t.Nanosecond() / 100_000)
+	order.PutUint16(data[8:10], fraction)
+
+	return data
 }
